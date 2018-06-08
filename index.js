@@ -1,4 +1,5 @@
 let tf = require('@tensorflow/tfjs')
+window.tf = tf
 
 function twist(tensor, delay, feedback_distribution){
   
