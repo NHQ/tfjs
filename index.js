@@ -1,4 +1,6 @@
 let tf = require('@tensorflow/tfjs')
+Math.random = require('math-random')
+
 window.tf = tf
 
 function twist(tensor, delay, feedback_distribution){
