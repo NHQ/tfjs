@@ -4,26 +4,30 @@ var tf = require('@tensorflow/tfjs')
 import {MnistData} from './mnist_data'
 
 var data
-var batchSize = 64
+var batchSize = 10000
 async function train(){
 
   console.log("begin")
   
-  var model = vae([512, 128, 32], [32, 128, 512, 784], [784], 'none')
+  var model = vae([512, 128, 32], [32, 128, 512, 784], [784], 'sigmoid')
 
   model.compile({
     loss: 'meanSquaredError',
     optimizer: tf.train.sgd(.15) 
   })
 
-  var batch = data.nextTrainBatch(10000)
+  var batch = data.nextTrainBatch(1000)
 
-  //console.log(batch)
-
-  var result = await model.fit(batch.xs, batch.xs, {batchSize: batchSize, epochs: 32, verbose: false})
+  var log = console.log
+  var result = await model.fit(batch.xs, batch.xs, {batchSize: batchSize, epochs: 32, verbose: false,
+    callbacks: {
+      onTrainEnd: function(){log(tf.memory())}
+    },
+    validationSplit: .5
+  })
 
   console.log(result.history)
-
+/*
   var encoder = tf.model({inputs: model.model.input, outputs: model.getLayer('Z_UNIT').output})
 
   var Zenc = encoder.predict(batch.xs)
@@ -33,7 +37,7 @@ async function train(){
 
 
   var abstract
-
+*/
 }
 
 async function load(){

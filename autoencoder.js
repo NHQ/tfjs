@@ -4,48 +4,67 @@ module.exports = function(decode_units, encode_units, input_shape, activation){
 
   activation = activation || 'sigmoid'
 
-  var input = tf.input([input shape])
+  var input = tf.input({batchShape: [null, input_shape[0]]})
 
   var z = decode_units.pop() // tail value is size of abstract components (aka latent variables)
   var size = z
   z = [z,z] // two tensors for mean and stdev 
 
   var params = {
-    activation: activation,
-    usebias: false,
-    kernalinitializer: tf.initializers.randomuniform({
+    activation: 'sigmoid',
+    useBias: false,
+    kernalinitializer: tf.initializers.randomUniform({
       maxval: 1,
       minval: -1
     })
   }
 
-  var decoder = decode_units.reduce((e,i,a) => {
-    let p Object.assign({}, params)
+  var decoder = decode_units.reduce((a, e) => {
+    var p = Object.assign({}, params)
     p.units = e
-    return tf.layers.dense(params).apply(a)
+    var dense = tf.layers.dense(p).apply(a)
+    return dense
   }, input)
-  
+
   z = z.map(e => {
-    let p = Object.assign({}, params)
-    return tf.layers.dense(params).apply(decoder)
+    var p = Object.assign({}, params)
+    p.units = e
+    var dense = tf.layers.dense(p).apply(decoder)
+    return dense
   })
 
-  var z_mean = z[0]
-  var z_dev = z[1]
+  class KL extends tf.layers.Layer{
+    constructor(z, inp, oup){
+      super({})
+      this.stuff = {z, inp, oup}
+    }
 
-  function sample (mean, dev){
-      let norm = tf.randomNormal(z_mean.shape[0], size)
+    computeOutputShape(inp){
+      return [inp[0], inp[1], inp[2], inp[3] * 2]
+    }
+
+    call(inps, kwargs){
+      this.involeCallHool(inps, kwargs)
+      var z_mean = z[0]
+      var z_sdv = z[1]
+      var norm = tf.randomNormal([size])
+      var sample = z_mean.add(tf.exp(z_sdv).mul(norm))
+
+      
+    }
+    getClassName(){
+      return "KL Divergance"
+    }
   }
 
   
-
-  var encoder = encode_units.reduce((e,i,a) => {
-    let p Object.assign({}, params)
+  var encoder = encode_units.reduce((a, e) => {
+    var p = Object.assign({}, params)
     p.units = e
-    return tf.layers.dense(params).apply(a)
-  }, z)
+    return tf.layers.dense(p).apply(a)
+  }, sample)
   
-  var model = tf.sequential({layers: decode_units.concat(encode_units)})
+  var model = tf.model({input: input, output: encoder })
 
   return model
 
